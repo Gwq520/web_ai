@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { sampleMotion } from './motion'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 export function createWarehouse(container, select, onTelemetry) {
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#081321')
@@ -6,7 +7,7 @@ export function createWarehouse(container, select, onTelemetry) {
   const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); container.appendChild(renderer.domElement)
   const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0, 7, 0); controls.enableDamping = true; controls.maxPolarAngle = Math.PI / 2.05
   scene.add(new THREE.HemisphereLight(0xc7e9ff, 0x233047, 2.5)); const light = new THREE.DirectionalLight(0xffffff, 3); light.position.set(20, 40, 15); scene.add(light)
-  const materials = {}; const machines = []; const targets = []; const rackMeshes = []; const movingPallets = []; let focusIndex = null; let speed = 1; let telemetryAt = 0
+  const materials = {}; const machines = []; const targets = []; const rackMeshes = []; const movingPallets = []; let focusIndex = null; let speed = 1; let telemetryAt = 0; let forkMode='double'; let forkDirection=1
   function box(parent, x,y,z,w,h,d,color) { const key = color; materials[key] ||= new THREE.MeshStandardMaterial({color,metalness:.35,roughness:.55}); const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),materials[key]); mesh.position.set(x,y,z); parent.add(mesh); return mesh }
   function cylinder(parent,x,y,z,r,length,color,axis='z') {
     materials[color] ||= new THREE.MeshStandardMaterial({color,metalness:.65,roughness:.32})
@@ -44,10 +45,20 @@ export function createWarehouse(container, select, onTelemetry) {
     for(const dz of [-.9,.9]){box(crane,-3.8,6.65,dz,.08,1.3,.08,'#f4c864');box(crane,-3.1,7.25,dz,1.5,.08,.08,'#f4c864')}
     for(const x of [-2,2]) {box(crane,x,8.3,.4,.035,15,.035,'#c6dce3');for(const y of [.5,16.35]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.25,16),materials['#345366'] ||= new THREE.MeshStandardMaterial({color:'#345366'}));wheel.rotation.x=Math.PI/2;wheel.position.set(x,y,0);crane.add(wheel)}}
     box(crane,2.8,4,.15,.7,1.8,.9,'#294fd1');box(crane,2.7,1.7,.15,.7,.9,.9,'#294fd1')
-    const carriage=new THREE.Group(); crane.add(carriage); box(carriage,0,0,0,4.2,.4,2.8,'#e8a637'); pallet(carriage,0,.22,0)
-    for(const x of [-.8,.8]) box(carriage,x,-.25,1.2,.16,.15,2.2,'#dae8ed')
+    const carriage=new THREE.Group(); crane.add(carriage); box(carriage,0,0,0,4.2,.4,2.8,'#e8a637')
+    const lowerFork=new THREE.Group();carriage.add(lowerFork)
+    const upperFork=new THREE.Group();lowerFork.add(upperFork)
+    // Two parallel fork rails per layer, symmetric about the carrier centre.
+    for(const x of [-.75,.75]) {
+      box(carriage,x,.26,0,.38,.12,2.8,'#394653')
+      box(lowerFork,x,.4,0,.3,.14,2.8,'#657584')
+      box(upperFork,x,.55,0,.24,.14,2.8,'#c6dce3')
+      for(let z=-1.1;z<1.2;z+=.35)cylinder(carriage,x,.29,z,.075,.42,'#99aab5','x')
+    }
+    box(carriage,0,.15,-1.2,1.7,.16,.2,'#394653')
+    const cargo=pallet(scene,0,0,0)
     const beacon=box(crane,0,16.5,0,.4,.4,.4,'#43ffc2'); beacon.material=new THREE.MeshBasicMaterial({color:0x43ffc2})
-    crane.traverse(o=>{if(o.isMesh){o.userData.machine=i;targets.push(o)}}); const outline=new THREE.BoxHelper(crane,0x36efda);outline.visible=false;scene.add(outline);machines.push({crane,carriage,outline})
+    crane.traverse(o=>{if(o.isMesh){o.userData.machine=i;targets.push(o)}}); const outline=new THREE.BoxHelper(crane,0x36efda);outline.visible=false;scene.add(outline);machines.push({crane,carriage,outline,lowerFork,upperFork,cargo})
   }
   for(const z of [-19,19]) {
     box(scene,0,.8,z,47,.4,2.8,'#345366')
@@ -57,10 +68,25 @@ export function createWarehouse(container, select, onTelemetry) {
     box(scene,-25,1.7,z,1,3,1.3,'#c8d7df');box(scene,-24.45,2.3,z,.04,.65,.7,'#132a3a')
   }
   let running=true,frame,time=0; const clock=new THREE.Clock()
-  function animate(){frame=requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(running)time+=dt*speed;machines.forEach((m,i)=>{m.crane.position.x=Math.sin(time*.18+i*2)*18;m.carriage.position.y=3+ (Math.sin(time*.35+i)+1)*5});movingPallets.forEach((m,i)=>m.position.x=((time*2+i*22)%44)-22);machines.forEach(m=>m.outline.visible&&m.outline.update());if(focusIndex!==null){const m=machines[focusIndex];const target=new THREE.Vector3(m.crane.position.x,8,m.crane.position.z);const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target)}if(time-telemetryAt>.12){telemetryAt=time;onTelemetry?.(machines.map(m=>({x:m.crane.position.x.toFixed(1),height:m.carriage.position.y.toFixed(1)})))}controls.update();renderer.render(scene,camera)}; animate()
+  function animate(){
+    frame=requestAnimationFrame(animate)
+    const dt=Math.min(clock.getDelta(),.05);if(running)time+=dt*speed
+    const samples=machines.map((m,i)=>{
+      const state=sampleMotion(time,forkMode,forkDirection,i)
+      m.crane.position.x=state.x;m.carriage.position.y=state.y
+      m.lowerFork.position.z=state.lower;m.upperFork.position.z=state.upperRelative
+      m.cargo.position.set(state.cargo.x,state.cargo.y,m.crane.position.z+state.cargo.z)
+      if(m.outline.visible)m.outline.update()
+      return {x:state.x.toFixed(1),height:state.y.toFixed(1),lower:state.lower.toFixed(2),upper:state.upper.toFixed(2),phase:state.label,progress:Math.round(state.progress*100),mode:state.mode,direction:state.direction}
+    })
+    movingPallets.forEach((m,i)=>m.position.x=((time*2+i*22)%44)-22)
+    if(focusIndex!==null){const m=machines[focusIndex];const target=new THREE.Vector3(m.crane.position.x,m.carriage.position.y+1,m.crane.position.z);const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target)}
+    if(time-telemetryAt>.1||telemetryAt===0){telemetryAt=time;onTelemetry?.(samples)}
+    controls.update();renderer.render(scene,camera)
+  }; animate()
   const resize=()=>{const {width,height}=container.getBoundingClientRect();if(!width||!height)return;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height)};const observer=new ResizeObserver(resize);observer.observe(container);resize()
   const ray=new THREE.Raycaster();const pointer=new THREE.Vector2();let down
   const onDown=e=>{down=[e.clientX,e.clientY]};const onClick=e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);const hit=ray.intersectObjects(targets)[0];if(hit)select(hit.object.userData.machine)}
   renderer.domElement.addEventListener('pointerdown',onDown);renderer.domElement.addEventListener('pointerup',onClick)
-  return {setRunning:v=>running=v,setSpeed:v=>speed=v,highlight:i=>machines.forEach((m,j)=>m.outline.visible=i===j),setXray:v=>{const unique=new Set(rackMeshes.map(m=>m.material));unique.forEach(m=>{m.transparent=v;m.opacity=v?.18:1;m.depthWrite=!v})},focus:i=>{focusIndex=i;const m=machines[i];controls.target.set(m.crane.position.x,8,m.crane.position.z);camera.position.set(m.crane.position.x+15,13,m.crane.position.z+19)},reset:()=>{focusIndex=null;camera.position.set(57,44,66);controls.target.set(0,7,0)},top:()=>{focusIndex=null;camera.position.set(0,85,.01);controls.target.set(0,0,0)},dispose:()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();const disposed=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!disposed.has(o.material)){o.material.dispose();disposed.add(o.material)}});renderer.dispose();renderer.domElement.remove()}}
+  return {setForkMode:v=>{forkMode=v;time=0;telemetryAt=0},setForkDirection:v=>{forkDirection=v;time=0;telemetryAt=0},setRunning:v=>running=v,setSpeed:v=>speed=v,highlight:i=>machines.forEach((m,j)=>m.outline.visible=i===j),setXray:v=>{const unique=new Set(rackMeshes.map(m=>m.material));unique.forEach(m=>{m.transparent=v;m.opacity=v?.18:1;m.depthWrite=!v})},focus:i=>{focusIndex=i;const m=machines[i];controls.target.set(m.crane.position.x,m.carriage.position.y+1,m.crane.position.z);camera.position.set(m.crane.position.x+11,m.carriage.position.y+7,m.crane.position.z+16)},reset:()=>{focusIndex=null;camera.position.set(57,44,66);controls.target.set(0,7,0)},top:()=>{focusIndex=null;camera.position.set(0,85,.01);controls.target.set(0,0,0)},dispose:()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();const disposed=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!disposed.has(o.material)){o.material.dispose();disposed.add(o.material)}});renderer.dispose();renderer.domElement.remove()}}
 }
