@@ -21,3 +21,22 @@ test('position and fork travel remain continuous across phases',()=>{
   for(const k of ['x','y','upper','lower'])assert.ok(Math.abs(a[k]-b[k])<.001,`${t}: ${k}`)
  }
 })
+import { normalizeConfig, occupancy, transferPoints } from '../src/config.js'
+test('all scene sizes hand off at conveyor height, then send pallet out',()=>{
+ for(const cranes of [1,4])for(const columns of [4,16])for(const levels of [2,6]){
+  const config=normalizeConfig({cranes,columns,levels}),count=occupancy(config)
+  assert.equal(count.total,(cranes+1)*columns*levels)
+  assert.ok(count.used<=count.total)
+  for(let i=0;i<cranes;i++)for(const mode of ['single','double'])for(const direction of [-1,1]){
+   const route=transferPoints(config,i)
+   assert.ok(route.drop.x>(columns-1)*2)
+   const released=sampleMotion(28,mode,direction,i,route),out=sampleMotion(30,mode,direction,i,route)
+   assert.equal(released.cargo.y,2.64)
+   assert.equal(released.cargo.z,direction*(mode==='single'?2.5:5))
+   assert.equal(released.cargo.x,route.drop.x)
+   assert.ok(out.cargo.x>released.cargo.x)
+   assert.equal(out.x,route.drop.x)
+   assert.equal(out.cargo.y,released.cargo.y)
+  }
+ }
+})
