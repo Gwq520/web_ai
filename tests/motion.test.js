@@ -21,11 +21,11 @@ test('position and fork travel remain continuous across phases',()=>{
   for(const k of ['x','y','upper','lower'])assert.ok(Math.abs(a[k]-b[k])<.001,`${t}: ${k}`)
  }
 })
-import { normalizeConfig, occupancy, transferPoints } from '../src/config.js'
+import { normalizeConfig, occupancy, transferPoints, warehouseLayout } from '../src/config.js'
 test('all scene sizes hand off at conveyor height, then send pallet out',()=>{
  for(const cranes of [1,4])for(const columns of [4,16])for(const levels of [2,6]){
   const config=normalizeConfig({cranes,columns,levels}),count=occupancy(config)
-  assert.equal(count.total,(cranes+1)*columns*levels)
+  assert.equal(count.total,4*cranes*columns*levels)
   assert.ok(count.used<=count.total)
   for(let i=0;i<cranes;i++)for(const mode of ['single','double'])for(const direction of [-1,1]){
    const route=transferPoints(config,i)
@@ -39,4 +39,27 @@ test('all scene sizes hand off at conveyor height, then send pallet out',()=>{
    assert.equal(out.cargo.y,released.cargo.y)
   }
  }
+})
+
+test('single-depth and double-depth row numbering, spacing and fork alignment',()=>{
+ for(const cranes of [1,2,4])for(const rackMode of ['single','double']){
+  const config=normalizeConfig({cranes,rackMode}),layout=warehouseLayout(config)
+  const perAisle=rackMode==='double'?4:2
+  assert.equal(layout.rows.length,cranes*perAisle)
+  assert.equal(occupancy(config).total,cranes*perAisle*config.columns*config.levels)
+  assert.deepEqual(layout.rows.map(r=>r.number),Array.from({length:cranes*perAisle},(_,i)=>i+1))
+  for(const aisle of layout.aisles){
+   const rows=layout.rows.filter(r=>r.aisle===aisle.index)
+   assert.equal(rows.filter(r=>r.side==='左').length,perAisle/2)
+   assert.equal(rows.filter(r=>r.side==='右').length,perAisle/2)
+   for(const direction of [-1,1]){
+    const fork=sampleMotion(10,rackMode,direction)
+    assert.ok(rows.some(r=>r.z===aisle.z+fork.upper),'extended fork must reach its rack row')
+   }
+  }
+  const sorted=layout.rows.map(r=>r.z).sort((a,b)=>a-b)
+  for(let i=1;i<sorted.length;i++)assert.ok(sorted[i]-sorted[i-1]>=2.5,'rack rows cannot overlap')
+ }
+ const one=warehouseLayout(normalizeConfig({cranes:1,rackMode:'double'}))
+ assert.deepEqual(one.rows.map(r=>[r.number,r.offset]),[[1,-5],[2,-2.5],[3,2.5],[4,5]])
 })
