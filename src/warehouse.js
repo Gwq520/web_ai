@@ -9,16 +9,21 @@ export function createWarehouse(container, select, onTelemetry, options={}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); container.appendChild(renderer.domElement)
   const controls = new OrbitControls(camera, renderer.domElement); controls.target.set(0, 7, 0); controls.enableDamping = true; controls.maxPolarAngle = Math.PI / 2.05
   scene.add(new THREE.HemisphereLight(0xc7e9ff, 0x233047, 2.5)); const light = new THREE.DirectionalLight(0xffffff, 3); light.position.set(20, 40, 15); scene.add(light)
-  const materials = {}; const machines = []; const targets = []; const rackMeshes = []; let focusIndex = null; let speed = 1; let telemetryAt = 0; let forkMode=config.rackMode; let forkDirection=1
-  function box(parent, x,y,z,w,h,d,color) { const key = color; materials[key] ||= new THREE.MeshStandardMaterial({color,metalness:.35,roughness:.55}); const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),materials[key]); mesh.position.set(x,y,z); parent.add(mesh); return mesh }
+  const materials = {}; const detailTextures=[]; const machines = []; const targets = []; const rackMeshes = []; let focusIndex = null; let focusWhole=false; let speed = 1; let telemetryAt = 0; let forkMode=config.rackMode; let forkDirection=1
+  function box(parent, x,y,z,w,h,d,color) { const key = color; materials[key] ||= new THREE.MeshStandardMaterial({color,metalness:color==='#1876b3'||color==='#248ccc'?.08:.45,roughness:.48}); const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),materials[key]); mesh.position.set(x,y,z); parent.add(mesh); return mesh }
   function cylinder(parent,x,y,z,r,length,color,axis='z') {
     materials[color] ||= new THREE.MeshStandardMaterial({color,metalness:.65,roughness:.32})
     const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,length,12),materials[color]); if(axis==='z') mesh.rotation.x=Math.PI/2; else if(axis==='x') mesh.rotation.z=Math.PI/2;mesh.position.set(x,y,z);parent.add(mesh);return mesh
   }
   function pallet(parent,x,y,z) {
     const group=new THREE.Group();group.position.set(x,y,z);parent.add(group)
-    for(const dz of [-.9,0,.9]) box(group,0,.15,dz,2.8,.3,.3,'#1876b3')
-    box(group,0,.35,0,2.8,.15,2.5,'#248ccc')
+    // Nine-foot plastic pallet with open fork pockets and a ribbed deck.
+    for(const dx of [-1.12,0,1.12])for(const dz of [-.95,0,.95])box(group,dx,.15,dz,.38,.3,.4,'#1876b3')
+    for(const dz of [-.95,0,.95])box(group,0,.04,dz,2.8,.08,.4,'#1876b3')
+    for(let j=0;j<13;j++)box(group,-1.35+j*.225,.35,0,.07,.15,2.5,'#248ccc')
+    for(let j=0;j<11;j++)box(group,0,.35,-1.2+j*.24,2.8,.15,.07,'#248ccc')
+    for(const dx of [-1.37,1.37])box(group,dx,.34,0,.07,.18,2.5,'#248ccc')
+    for(const dz of [-1.22,1.22])box(group,0,.34,dz,2.8,.18,.07,'#248ccc')
     for(const dx of [-.65,.65])for(const dz of [-.56,.56]){box(group,dx,1.25,dz,1.24,1.65,1.06,'#b3976c');box(group,dx,2.081,dz,.06,.015,1.06,'#d4c2a1')}
     box(group,0,1.2,1.095,.48,.34,.015,'#e6e4dc');return group
   }
@@ -40,28 +45,51 @@ export function createWarehouse(container, select, onTelemetry, options={}) {
   batches.forEach(meshes=>{const first=meshes[0];const instance=new THREE.InstancedMesh(first.geometry,first.material.clone(),meshes.length);meshes.forEach((m,i)=>{instance.setMatrixAt(i,m.matrixWorld);m.removeFromParent();if(m.geometry!==first.geometry)m.geometry.dispose()});instance.computeBoundingSphere();scene.add(instance);rackMeshes.push(instance)})
   for(let i=0;i<config.cranes;i++) {const crane=new THREE.Group(); const z=layout.aisles[i].z; crane.position.set(-16+i*10,0,z); scene.add(crane)
     box(scene,0,.35,z,halfLength*2+16,.15,.15,'#38a9d1').position.x=0
-    box(crane,0,.9,0,5.5,1.1,2.1,'#eab649')
-    for(const x of [-2,2]) box(crane,x,craneHeight/2,0,.42,craneHeight-1,.55,'#f4c864')
+    box(crane,0,.85,0,5.5,.65,1.7,'#eab649')
+    box(crane,0,.46,0,5.1,.18,1.9,'#263441')
+    for(const dx of [-2.25,2.25])for(const dz of [-.7,.7]){cylinder(crane,dx,.42,dz,.32,.23,'#263441');cylinder(crane,dx,.42,dz+Math.sign(dz)*.13,.14,.02,'#aabac5')}
+    for(const dx of [-2,2])for(const dz of [-.85,.85])cylinder(crane,dx,1.19,dz,.055,.04,'#aabac5','y')
+    for(let n=0;n<8;n++){const stripe=box(crane,-1.15+n*.32,.84,.86,.14,.55,.025,'#263441');stripe.rotation.z=-.45}
+    for(const x of [-2,2]){
+      box(crane,x,craneHeight/2,0,.38,craneHeight-1,.52,'#efbb31')
+      for(const dz of [-.26,.26])box(crane,x,craneHeight/2,dz,.58,craneHeight-1,.07,'#ffd266')
+      box(crane,x-Math.sign(x)*.25,craneHeight/2,.02,.08,craneHeight-1,.35,'#aabac5')
+      for(let y=2;y<craneHeight-1;y+=2.1)for(const dz of [-.31,.31])cylinder(crane,x,y,dz,.045,.025,'#263441')
+    }
     box(crane,0,craneHeight,0,5.5,.45,.8,'#f4c864')
     for(let y=1.5;y<craneHeight;y+=.65) box(crane,-2.75,y,0,.65,.08,.12,'#eed17c')
     for(const x of [-3.05,-2.45]) box(crane,x,craneHeight/2,0,.07,craneHeight-1,.1,'#eed17c')
-    box(crane,-3.1,6,0,1.6,.15,2,'#f4c864')
-    for(const dz of [-.9,.9]){box(crane,-3.8,6.65,dz,.08,1.3,.08,'#f4c864');box(crane,-3.1,7.25,dz,1.5,.08,.08,'#f4c864')}
+    const serviceY=Math.min(6,craneHeight*.45);box(crane,-3.1,serviceY,0,1.6,.15,1.5,'#667a88')
+    for(let dx=-3.8;dx<-2.3;dx+=.18)box(crane,dx,serviceY+.1,0,.03,.02,1.5,'#aabac5')
+    for(const dz of [-.72,.72]){box(crane,-3.8,serviceY+.65,dz,.08,1.3,.08,'#f4c864');box(crane,-3.1,serviceY+1.25,dz,1.5,.08,.08,'#f4c864')}
     for(const x of [-2,2]) {box(crane,x,craneHeight/2,.4,.035,craneHeight-1,.035,'#c6dce3');for(const y of [.5,craneHeight+.35]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.25,16),materials['#345366'] ||= new THREE.MeshStandardMaterial({color:'#345366'}));wheel.rotation.x=Math.PI/2;wheel.position.set(x,y,0);crane.add(wheel)}}
-    box(crane,2.8,4,.15,.7,1.8,.9,'#294fd1');box(crane,2.7,1.7,.15,.7,.9,.9,'#294fd1')
-    const carriage=new THREE.Group(); crane.add(carriage); box(carriage,0,0,0,4.2,.4,2.8,'#e8a637')
+    function motor(x,y,z,size){
+      cylinder(crane,x,y,z,size,.95,'#2457a1','y');cylinder(crane,x,y+.55,z,size*.86,.15,'#16366a','y')
+      for(let angle=0;angle<Math.PI*2;angle+=Math.PI/6)box(crane,x+Math.cos(angle)*size,y,z+Math.sin(angle)*size,.045,.78,.045,'#4b81c6')
+      box(crane,x,y-.72,z,size*2,.4,size*2,'#667a88');cylinder(crane,x-.15,y-.6,z+.48,.42,.25,'#aabac5');cylinder(crane,x-.15,y-.6,z+.62,.17,.025,'#263441')
+    }
+    motor(2.7,3.15,0,.32);motor(2.7,1.7,-.05,.25)
+    cylinder(crane,2.2,2.05,.12,.4,.75,'#667a88','x')
+    box(crane,-2.6,2.15,-.45,.55,2.1,.5,'#cad6dc');box(crane,-2.6,2.65,-.715,.3,.38,.025,'#16366a')
+    const carriage=new THREE.Group(); crane.add(carriage); box(carriage,0,0,0,4.15,.24,2.3,'#e8a637')
+    for(const dx of [-1.7,1.7]){box(carriage,dx,.6,0,.25,1.5,.8,'#667a88');for(const dy of [.05,1.15])cylinder(carriage,dx,dy,.5,.17,.12,'#263441')}
+    for(const dz of [-1.1,1.1]){box(carriage,0,-.05,dz,3.4,.3,.12,'#efbb31');for(let dx=-1.6;dx<1.7;dx+=.4)box(carriage,dx,-.05,dz+Math.sign(dz)*.07,.15,.23,.02,'#263441')}
     const lowerFork=new THREE.Group();carriage.add(lowerFork)
     const upperFork=new THREE.Group();lowerFork.add(upperFork)
     // Two parallel fork rails per layer, symmetric about the carrier centre.
     for(const x of [-.75,.75]) {
       box(carriage,x,.26,0,.38,.12,2.8,'#394653')
-      box(lowerFork,x,.4,0,.3,.14,2.8,'#657584')
-      box(upperFork,x,.55,0,.24,.14,2.8,'#c6dce3')
+      box(lowerFork,x,.4,0,.3,.14,2.8,'#394653')
+      box(upperFork,x,.55,0,.24,.14,2.8,'#aabac5')
       for(let z=-1.1;z<1.2;z+=.35)cylinder(carriage,x,.29,z,.075,.42,'#99aab5','x')
     }
-    box(carriage,0,.15,-1.2,1.7,.16,.2,'#394653')
+    box(carriage,0,.15,-1.05,1.7,.16,.2,'#394653')
+    cylinder(carriage,0,.19,-.95,.13,1.65,'#aabac5','x');box(carriage,1.1,.15,-.85,.45,.33,.5,'#2457a1')
+    for(const dx of [-.75,.75])for(let dz=-1.25;dz<1.3;dz+=.2)box(lowerFork,dx+.16,.42,dz,.025,.03,.07,'#aabac5')
+    const plateCanvas=document.createElement('canvas');plateCanvas.width=256;plateCanvas.height=128;const plateCtx=plateCanvas.getContext('2d');plateCtx.fillStyle='#132a3b';plateCtx.fillRect(0,0,256,128);plateCtx.fillStyle='#53dfca';plateCtx.font='bold 48px sans-serif';plateCtx.textAlign='center';plateCtx.fillText('SC-'+String(i+1).padStart(2,'0'),128,60);plateCtx.fillStyle='#b7cbd7';plateCtx.font='20px sans-serif';plateCtx.fillText('PALLET STACKER',128,97);const plateTexture=new THREE.CanvasTexture(plateCanvas);detailTextures.push(plateTexture);const nameplate=new THREE.Mesh(new THREE.PlaneGeometry(1.5,.75),new THREE.MeshBasicMaterial({map:plateTexture}));nameplate.position.set(0,craneHeight-.65,.44);crane.add(nameplate)
     const cargo=pallet(scene,0,0,0)
-    const beacon=box(crane,0,craneHeight+.5,0,.4,.4,.4,'#43ffc2'); beacon.material=new THREE.MeshBasicMaterial({color:0x43ffc2})
+    cylinder(crane,0,craneHeight+.34,0,.15,.16,'#263441','y')
+    const beacon=cylinder(crane,0,craneHeight+.56,0,.13,.3,'#43ffc2','y');beacon.material=new THREE.MeshBasicMaterial({color:0x43ffc2})
     crane.traverse(o=>{if(o.isMesh){o.userData.machine=i;targets.push(o)}}); const outline=new THREE.BoxHelper(crane,0x36efda);outline.visible=false;scene.add(outline);machines.push({crane,carriage,outline,lowerFork,upperFork,cargo})
   }
   const labels=[]
@@ -91,7 +119,7 @@ export function createWarehouse(container, select, onTelemetry, options={}) {
       if(m.outline.visible)m.outline.update()
       return {x:state.x.toFixed(1),height:state.y.toFixed(1),lower:state.lower.toFixed(2),upper:state.upper.toFixed(2),phase:state.label,progress:Math.round(state.progress*100),mode:state.mode,direction:state.direction}
     })
-    if(focusIndex!==null){const m=machines[focusIndex];const target=new THREE.Vector3(m.crane.position.x,m.carriage.position.y+1,m.crane.position.z);const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target)}
+    if(focusIndex!==null){const m=machines[focusIndex];const target=new THREE.Vector3(m.crane.position.x,(focusWhole?craneHeight/2:m.carriage.position.y+1),m.crane.position.z);const delta=target.clone().sub(controls.target);camera.position.add(delta);controls.target.copy(target)}
     if(time-telemetryAt>.1||telemetryAt===0){telemetryAt=time;onTelemetry?.(samples)}
     controls.update();renderer.render(scene,camera)
   }; animate()
@@ -99,5 +127,5 @@ export function createWarehouse(container, select, onTelemetry, options={}) {
   const ray=new THREE.Raycaster();const pointer=new THREE.Vector2();let down
   const onDown=e=>{down=[e.clientX,e.clientY]};const onClick=e=>{if(!down||Math.hypot(e.clientX-down[0],e.clientY-down[1])>5)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(pointer,camera);const hit=ray.intersectObjects(targets)[0];if(hit)select(hit.object.userData.machine)}
   renderer.domElement.addEventListener('pointerdown',onDown);renderer.domElement.addEventListener('pointerup',onClick)
-  return {setForkMode:v=>{forkMode=v;positionDocks();time=0;telemetryAt=0},setForkDirection:v=>{forkDirection=v;time=0;telemetryAt=0},setRunning:v=>running=v,setSpeed:v=>speed=v,highlight:i=>machines.forEach((m,j)=>m.outline.visible=i===j),setXray:v=>{const unique=new Set(rackMeshes.map(m=>m.material));unique.forEach(m=>{m.transparent=v;m.opacity=v?.18:1;m.depthWrite=!v})},focus:i=>{focusIndex=i;rackMeshes.forEach(m=>m.visible=false);const m=machines[i];controls.target.set(m.crane.position.x,m.carriage.position.y+1,m.crane.position.z);camera.position.set(m.crane.position.x+11,m.carriage.position.y+7,m.crane.position.z+16)},reset:()=>{focusIndex=null;rackMeshes.forEach(m=>m.visible=true);camera.position.set(halfLength+38,craneHeight+28,halfDepth+48);controls.target.set(4,craneHeight/2,0)},top:()=>{focusIndex=null;rackMeshes.forEach(m=>m.visible=true);camera.position.set(4,Math.max(85,halfLength*3),.01);controls.target.set(0,0,0)},dispose:()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();const disposed=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!disposed.has(o.material)){o.material.dispose();disposed.add(o.material)}});labels.forEach(l=>l.material.map.dispose());renderer.dispose();renderer.domElement.remove()}}
+  return {setForkMode:v=>{forkMode=v;positionDocks();time=0;telemetryAt=0},setForkDirection:v=>{forkDirection=v;time=0;telemetryAt=0},setRunning:v=>running=v,setSpeed:v=>speed=v,highlight:i=>machines.forEach((m,j)=>m.outline.visible=i===j),setXray:v=>{const unique=new Set(rackMeshes.map(m=>m.material));unique.forEach(m=>{m.transparent=v;m.opacity=v?.18:1;m.depthWrite=!v})},fullFocus:i=>{focusIndex=i;focusWhole=true;rackMeshes.forEach(m=>m.visible=false);const m=machines[i];controls.target.set(m.crane.position.x,craneHeight/2,m.crane.position.z);camera.position.set(m.crane.position.x+craneHeight*1.1,craneHeight*.85,m.crane.position.z+craneHeight*1.6)},focus:i=>{focusIndex=i;focusWhole=false;rackMeshes.forEach(m=>m.visible=false);const m=machines[i];controls.target.set(m.crane.position.x,m.carriage.position.y+1,m.crane.position.z);camera.position.set(m.crane.position.x+11,m.carriage.position.y+7,m.crane.position.z+16)},reset:()=>{focusIndex=null;rackMeshes.forEach(m=>m.visible=true);camera.position.set(halfLength+38,craneHeight+28,halfDepth+48);controls.target.set(4,craneHeight/2,0)},top:()=>{focusIndex=null;rackMeshes.forEach(m=>m.visible=true);camera.position.set(4,Math.max(85,halfLength*3),.01);controls.target.set(0,0,0)},dispose:()=>{cancelAnimationFrame(frame);observer.disconnect();controls.dispose();const disposed=new Set();scene.traverse(o=>{o.geometry?.dispose();if(o.material&&!disposed.has(o.material)){o.material.dispose();disposed.add(o.material)}});labels.forEach(l=>l.material.map.dispose());detailTextures.forEach(t=>t.dispose());renderer.dispose();renderer.domElement.remove()}}
 }
