@@ -668,10 +668,11 @@ export function createWarehouse(
   renderer.domElement.addEventListener('pointerdown', onDown)
   renderer.domElement.addEventListener('pointerup', onClick)
   return {
-    simulatePickupAlarm: (i) => {
+    simulatePickupAlarm: (i, definition) => {
       const m = machines[i]
       if (m && !m.device.alarm && !m.device.pending) {
         m.device.pending = true
+        m.device.pendingDefinition = definition
         needsRender = true
         return true
       }

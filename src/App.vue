@@ -9,6 +9,14 @@ import {
   warehouseLayout
 } from './config'
 import { createWarehouse } from './warehouse'
+import ModelStudio from './ModelStudio.vue'
+import {ALARM_OPTIONS,ALARM_CATALOG} from './alarm-catalog.js'
+const alarmCode=ref('FORK-101'),alarmCategory=ref('全部')
+const alarmDefinition=computed(()=>ALARM_OPTIONS.find(a=>a.code===alarmCode.value)||ALARM_OPTIONS[0])
+const alarmCategories=['全部',...new Set(ALARM_OPTIONS.map(a=>a.category))]
+const filteredAlarmOptions=computed(()=>ALARM_OPTIONS.filter(a=>alarmCategory.value==='全部'||a.category===alarmCategory.value))
+watch(alarmCategory,()=>{if(!filteredAlarmOptions.value.some(a=>a.code===alarmCode.value))alarmCode.value=filteredAlarmOptions.value[0]?.code||'FORK-101'})
+const studioOpen=ref(false)
 const dashboardHost = ref(),
   sceneOnly = ref(false),
   fullscreen = ref(false)
@@ -188,12 +196,11 @@ function handleAlarm(event) {
   ElMessage.error(d.name + ' · ' + event.message)
 }
 function simulateAlarm() {
-  if (twin?.simulatePickupAlarm(selected.value)) {
+  if (twin?.simulatePickupAlarm(selected.value,alarmDefinition.value)) {
     pendingAlarms.value.push(selected.value)
     running.value = true
     ElMessage.info(
-      devices.value[selected.value].name +
-        ' 已安排取货报警，进入伸叉取货阶段后触发'
+      devices.value[selected.value].name + ' 已安排报警演示：'+alarmDefinition.value.message
     )
   }
 }
@@ -220,7 +227,8 @@ function openConfig() {
   draft.value = { ...config.value }
   configOpen.value = true
 }
-watch(running, (v) => twin?.setRunning(v))
+watch(running, (v) => twin?.setRunning(v && !studioOpen.value))
+watch(studioOpen,v=>twin?.setRunning(!v&&running.value))
 watch(xray, (v) => twin?.setXray(v))
 watch(speed, (v) => twin?.setSpeed(v))
 watch(forkDirection, (v) => twin?.setForkDirection(v))
@@ -475,7 +483,7 @@ onBeforeUnmount(() => {
           /></el-select>
         </div>
         <div ref="sceneHost" class="scene"></div>
-        <div class="scene-tools">
+        <div class="scene-tools"><el-button type="primary" @click="studioOpen=true">模型库 / 拖拽布置</el-button>
           <el-button
             :type="sceneOnly ? 'primary' : 'default'"
             @click="sceneOnly = !sceneOnly"
@@ -610,7 +618,7 @@ onBeforeUnmount(() => {
               >
             </div>
           </div>
-          <el-button
+          <div class="alarm-picker"><label>报警类型 · {{ALARM_CATALOG.length}} 项清单</label><el-select v-model="alarmCategory" aria-label="报警分类" :disabled="hasFaults"><el-option v-for="c in alarmCategories" :key="c" :label="c" :value="c"/></el-select><el-select v-model="alarmCode" filterable aria-label="报警类型" :disabled="hasFaults"><el-option v-for="a in filteredAlarmOptions" :key="a.code" :label="a.message" :value="a.code"/></el-select><small>{{alarmDefinition.category}} · {{alarmDefinition.severity}} · 内部演示编号 {{alarmDefinition.code}}</small></div><el-button
             class="simulate-alarm"
             type="danger"
             plain
@@ -618,8 +626,8 @@ onBeforeUnmount(() => {
             @click="simulateAlarm"
             >{{
               pendingAlarms.includes(selected)
-                ? '等待取货阶段触发'
-                : '模拟取货报警 · ' + devices[selected].name
+                ? '等待对应阶段触发'
+                : (alarmCode==='FORK-101'?'模拟取货报警 · ':'模拟所选报警 · ') + devices[selected].name
             }}</el-button
           ><el-button
             v-if="pendingAlarms.includes(selected)"
@@ -797,7 +805,7 @@ onBeforeUnmount(() => {
                 : '待确认'
           }}</el-tag>
         </div>
-        <p>{{ a.code }} · {{ a.message }}</p>
+        <p>{{ a.code }} · {{ a.message }}<br><small>{{a.category}} · {{a.severity}}</small></p>
         <small>{{ a.phase }} · {{ a.time }}</small>
         <div class="alarm-actions" v-if="!a.resolved">
           <el-button @click="locateAlarm(a)">定位设备</el-button
@@ -814,7 +822,8 @@ onBeforeUnmount(() => {
         WCS。真实设备复位需由设备控制系统执行。
       </p></el-drawer
     >
-    <footer>
+    <ModelStudio v-if="studioOpen" @close="studioOpen=false"/>
+  <footer>
       <span>WAREHOUSE OS / DIGITAL TWIN CONSOLE</span
       ><span>本地演示 · Three.js + ECharts + Vue + Element Plus</span>
     </footer>

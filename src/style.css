@@ -1214,3 +1214,4 @@ footer {
     text-align: left;
   }
 }
+.alarm-picker{padding:12px 0}.alarm-picker label{font-size:12px;color:#aac5d4;display:block;margin-bottom:8px}.alarm-picker .el-select{margin-bottom:7px;width:100%}.alarm-picker small{color:#90adbf;font-size:10px;line-height:1.7}
