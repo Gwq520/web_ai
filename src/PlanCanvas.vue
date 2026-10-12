@@ -5,7 +5,7 @@ const emit=defineEmits(['select','move','drop'])
 const svg=ref(),dragging=ref(null),zoom=ref(1)
 const extent=computed(()=>{let x=30,z=22.5;for(const p of props.placements){x=Math.max(x,Math.abs(p.position[0])+6);z=Math.max(z,Math.abs(p.position[2])+6)}return {x:x/zoom.value,z:z/zoom.value}})
 const viewBox=computed(()=>`${-extent.value.x} ${-extent.value.z} ${extent.value.x*2} ${extent.value.z*2}`)
-const colors={stacker:'#f5a648',rack:'#65b0df',conveyor:'#51dcc5',pallet:'#5b8cf5',other:'#c895eb'}
+const colors={stacker:'#f5a648',rack:'#65b0df',conveyor:'#51dcc5',pallet:'#5b8cf5',robot:'#ffc56f',lift:'#b3a0f1',station:'#69d3d8',safety:'#ef9d9d',other:'#c895eb'}
 const asset=p=>props.assets.find(a=>a.id===p.assetId)
 const size=p=>{const b=p.bounds||({stacker:[3.5,8,2],rack:[4,6,2],conveyor:[6,1.1,1.6],pallet:[1.2,.4,1]}[asset(p)?.category]||[2,2,2]);return {x:Math.max(.3,b[0]*p.scale[0]),z:Math.max(.3,b[2]*p.scale[2])}}
 const point=e=>{const p=svg.value.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.value.getScreenCTM().inverse())}

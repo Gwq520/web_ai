@@ -4,14 +4,11 @@ import {TransformControls} from 'three/addons/controls/TransformControls.js'
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js'
 import {STLLoader} from 'three/addons/loaders/STLLoader.js'
 import {OBJLoader} from 'three/addons/loaders/OBJLoader.js'
-export const categories=[['stacker','堆垛机'],['rack','货架'],['conveyor','输送线'],['pallet','托盘'],['other','其他设备']]
+import {EQUIPMENT_CATEGORIES,buildEquipment} from './equipment'
+export const categories=EQUIPMENT_CATEGORIES
 export async function assetModel(asset){
  let root
- if(asset.builtin){root=new THREE.Group();const box=(x,y,z,w,h,d,color)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color,metalness:.35,roughness:.5}));m.position.set(x,y,z);root.add(m)}
- if(asset.category==='stacker'){box(0,.3,0,3.5,.6,1.4,'#ef8c25');for(const x of [-1.3,1.3])box(x,4,0,.18,8,.25,'#ef8c25');box(0,8,0,3.4,.2,.5,'#ef8c25');box(0,2.5,0,2.7,.2,1.6,'#768e9e');for(const x of [-.5,.5])box(x,2.7,0,.15,.12,2,'#c8d4dd')}
- else if(asset.category==='rack'){for(const x of [-2,2])for(const z of [-1,1])box(x,3,z,.1,6,.1,'#39738c');for(let y=.5;y<6;y+=1.5)for(const z of [-1,1])box(0,y,z,4,.1,.1,'#619aad')}
- else if(asset.category==='conveyor'){box(0,.8,0,6,.2,1.6,'#465d6b');for(let x=-2.8;x<3;x+=.3){const m=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,1.4,12),new THREE.MeshStandardMaterial({color:'#a6b9c5'}));m.rotation.x=Math.PI/2;m.position.set(x,.98,0);root.add(m)}for(const x of [-2,2])box(x,.4,0,.15,.8,1,'#465d6b')}
- else {for(const z of [-.45,0,.45])box(0,.12,z,1.2,.24,.15,'#248ccc');box(0,.28,0,1.2,.1,1,'#248ccc')}
+ if(asset.builtin){root=buildEquipment(asset.type||({stacker:'stacker',rack:'rack',conveyor:'roller',pallet:'pallet'}[asset.category]))
  } else if(asset.ext==='glb'||asset.ext==='gltf'){
   root=(await new GLTFLoader().parseAsync(asset.buffer,'')).scene
  }else if(asset.ext==='stl'){root=new THREE.Mesh(new STLLoader().parse(asset.buffer),new THREE.MeshStandardMaterial({color:'#adbfc8',metalness:.4,roughness:.45}))}
