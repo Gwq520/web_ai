@@ -206,6 +206,7 @@ export function createWarehouse(
     const z = layout.aisles[i].z
     crane.position.set(-16 + i * 10, 0, z)
     scene.add(crane)
+    crane.scale.x = 0.88
     box(
       scene,
       0,
@@ -216,7 +217,7 @@ export function createWarehouse(
       0.15,
       '#38a9d1'
     ).position.x = 0
-    box(crane, 0, 0.85, 0, 5.5, 0.65, 1.7, '#eab649')
+    box(crane, 0, 0.85, 0, 5.25, 0.45, 1.7, '#f28c28')
     box(crane, 0, 0.46, 0, 5.1, 0.18, 1.9, '#263441')
     for (const dx of [-2.25, 2.25])
       for (const dz of [-0.7, 0.7]) {
@@ -248,16 +249,16 @@ export function createWarehouse(
       stripe.rotation.z = -0.45
     }
     for (const x of [-2, 2]) {
-      box(crane, x, craneHeight / 2, 0, 0.38, craneHeight - 1, 0.52, '#efbb31')
+      box(crane, x, craneHeight / 2, 0, 0.25, craneHeight - 1, 0.40, '#ef7f1a')
       for (const dz of [-0.26, 0.26])
         box(
           crane,
           x,
           craneHeight / 2,
           dz,
-          0.58,
+          0.38,
           craneHeight - 1,
-          0.07,
+          0.055,
           '#ffd266'
         )
       box(
@@ -274,18 +275,22 @@ export function createWarehouse(
         for (const dz of [-0.31, 0.31])
           cylinder(crane, x, y, dz, 0.045, 0.025, '#263441')
     }
-    box(crane, 0, craneHeight, 0, 5.5, 0.45, 0.8, '#f4c864')
+    for(const x of [-1.7,1.7]) {
+      box(crane,x,craneHeight/2,-.25,.06,craneHeight-1,.06,'#202d38')
+      for(let y=1.4;y<craneHeight;y+=.45)box(crane,x, y,-.30,.07,.07,.05,'#667a88')
+    }
+    box(crane, 0, craneHeight, 0, 5.15, 0.27, 0.65, '#ff9d38')
     for (let y = 1.5; y < craneHeight; y += 0.65)
-      box(crane, -2.75, y, 0, 0.65, 0.08, 0.12, '#eed17c')
+      box(crane, -2.75, y, 0, 0.65, 0.08, 0.12, '#c3cdd3')
     for (const x of [-3.05, -2.45])
-      box(crane, x, craneHeight / 2, 0, 0.07, craneHeight - 1, 0.1, '#eed17c')
+      box(crane, x, craneHeight / 2, 0, 0.07, craneHeight - 1, 0.1, '#c3cdd3')
     const serviceY = Math.min(6, craneHeight * 0.45)
     box(crane, -3.1, serviceY, 0, 1.6, 0.15, 1.5, '#667a88')
     for (let dx = -3.8; dx < -2.3; dx += 0.18)
       box(crane, dx, serviceY + 0.1, 0, 0.03, 0.02, 1.5, '#aabac5')
     for (const dz of [-0.72, 0.72]) {
-      box(crane, -3.8, serviceY + 0.65, dz, 0.08, 1.3, 0.08, '#f4c864')
-      box(crane, -3.1, serviceY + 1.25, dz, 1.5, 0.08, 0.08, '#f4c864')
+      box(crane, -3.8, serviceY + 0.65, dz, 0.08, 1.3, 0.08, '#ff9d38')
+      box(crane, -3.1, serviceY + 1.25, dz, 1.5, 0.08, 0.08, '#ff9d38')
     }
     for (const x of [-2, 2]) {
       box(
@@ -311,8 +316,8 @@ export function createWarehouse(
       }
     }
     function motor(x, y, z, size) {
-      cylinder(crane, x, y, z, size, 0.95, '#2457a1', 'y')
-      cylinder(crane, x, y + 0.55, z, size * 0.86, 0.15, '#16366a', 'y')
+      cylinder(crane, x, y, z, size, 0.95, '#354653', 'y')
+      cylinder(crane, x, y + 0.55, z, size * 0.86, 0.15, '#202d38', 'y')
       for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 6)
         box(
           crane,
@@ -332,17 +337,17 @@ export function createWarehouse(
     motor(2.7, 1.7, -0.05, 0.25)
     cylinder(crane, 2.2, 2.05, 0.12, 0.4, 0.75, '#667a88', 'x')
     box(crane, -2.6, 2.15, -0.45, 0.55, 2.1, 0.5, '#cad6dc')
-    box(crane, -2.6, 2.65, -0.715, 0.3, 0.38, 0.025, '#16366a')
+    box(crane, -2.6, 2.65, -0.715, 0.3, 0.38, 0.025, '#202d38')
     const carriage = new THREE.Group()
     crane.add(carriage)
-    box(carriage, 0, 0, 0, 4.15, 0.24, 2.3, '#e8a637')
+    box(carriage, 0, 0, 0, 4.15, 0.24, 2.3, '#f28c28')
     for (const dx of [-1.7, 1.7]) {
       box(carriage, dx, 0.6, 0, 0.25, 1.5, 0.8, '#667a88')
       for (const dy of [0.05, 1.15])
         cylinder(carriage, dx, dy, 0.5, 0.17, 0.12, '#263441')
     }
     for (const dz of [-1.1, 1.1]) {
-      box(carriage, 0, -0.05, dz, 3.4, 0.3, 0.12, '#efbb31')
+      box(carriage, 0, -0.05, dz, 3.4, 0.3, 0.12, '#ef7f1a')
       for (let dx = -1.6; dx < 1.7; dx += 0.4)
         box(
           carriage,
@@ -355,6 +360,11 @@ export function createWarehouse(
           '#263441'
         )
     }
+    for(const x of [-1.65,1.65]) {
+      box(carriage,x,.8,-.42,.14,1.7,.12,'#c3cdd3')
+      box(carriage,x,.8,.42,.14,1.7,.12,'#c3cdd3')
+    }
+    box(carriage,0,.88,-.5,3.2,.12,.12,'#c3cdd3')
     const lowerFork = new THREE.Group()
     carriage.add(lowerFork)
     const upperFork = new THREE.Group()
@@ -369,7 +379,7 @@ export function createWarehouse(
     }
     box(carriage, 0, 0.15, -1.05, 1.7, 0.16, 0.2, '#394653')
     cylinder(carriage, 0, 0.19, -0.95, 0.13, 1.65, '#aabac5', 'x')
-    box(carriage, 1.1, 0.15, -0.85, 0.45, 0.33, 0.5, '#2457a1')
+    box(carriage, 1.1, 0.15, -0.85, 0.45, 0.33, 0.5, '#354653')
     for (const dx of [-0.75, 0.75])
       for (let dz = -1.25; dz < 1.3; dz += 0.2)
         box(lowerFork, dx + 0.16, 0.42, dz, 0.025, 0.03, 0.07, '#aabac5')
@@ -407,6 +417,8 @@ export function createWarehouse(
       'y'
     )
     beacon.material = new THREE.MeshBasicMaterial({ color: 0x43ffc2 })
+    const selectionRing=new THREE.Mesh(new THREE.RingGeometry(2.6,2.72,48),new THREE.MeshBasicMaterial({color:0x36efda,transparent:true,opacity:.7,side:THREE.DoubleSide}))
+    selectionRing.rotation.x=-Math.PI/2;selectionRing.position.y=.08;selectionRing.visible=false;crane.add(selectionRing)
     crane.traverse((o) => {
       if (o.isMesh) {
         o.userData.machine = i
@@ -445,6 +457,7 @@ export function createWarehouse(
       cargo,
       beacon,
       alarmLabel,
+      selectionRing,
       device: createDeviceState()
     })
   }
@@ -481,7 +494,7 @@ export function createWarehouse(
     floorLabel(r.number + ' 排', -halfLength - 5, r.z, '#85b9d5')
   )
   layout.aisles.forEach((a) =>
-    floorLabel(a.index + 1 + ' 巷道', -halfLength - 5, a.z, '#f4c864')
+    floorLabel(a.index + 1 + ' 巷道', -halfLength - 5, a.z, '#ff9d38')
   )
   // Each aisle has a handoff conveyor on both sides of the travel rail.
   for (let i = 0; i < config.cranes; i++)
@@ -498,9 +511,9 @@ export function createWarehouse(
       for (let dx = -0.8; dx < 9; dx += 0.5)
         cylinder(dock, dx, 2.51, 0, 0.13, 2.6, '#99aab5')
       for (const edge of [-1.2, 1.2]) {
-        box(dock, 4, 3.8, edge, 10, 0.08, 0.08, '#eab649')
+        box(dock, 4, 3.8, edge, 10, 0.08, 0.08, '#f28c28')
         for (const dx of [-1, 4, 9]) {
-          box(dock, dx, 2, edge, 0.1, 3.6, 0.1, '#eab649')
+          box(dock, dx, 2, edge, 0.1, 3.6, 0.1, '#f28c28')
           box(dock, dx, 1, edge / 2, 0.15, 2, 0.15, '#345366')
         }
       }
@@ -513,6 +526,11 @@ export function createWarehouse(
       ({ dock, index, side }) =>
         (dock.position.z = layout.aisles[index].z + side * reach)
     )
+  }
+  function setInspection(index) {
+    machines.forEach((m,i)=>{m.crane.visible=index===null||i===index;m.cargo.visible=index===null||i===index})
+    docks.forEach(d=>d.dock.visible=index===null||d.index===index)
+    needsRender=true
   }
   camera.position.set(halfLength + 38, craneHeight + 28, halfDepth + 48)
   controls.target.set(4, craneHeight / 2, 0)
@@ -549,8 +567,8 @@ export function createWarehouse(
         state.cargo.y,
         m.crane.position.z + state.cargo.z
       )
-      m.outline.visible =
-        Boolean(m.device.alarm) || m.outline.userData.selected === true
+      m.selectionRing.visible=m.outline.userData.selected===true&&!m.device.alarm
+      m.outline.visible =m.crane.visible && Boolean(m.device.alarm)
       if (m.outline.visible) m.outline.update()
       return {
         x: state.x.toFixed(1),
@@ -638,7 +656,13 @@ export function createWarehouse(
       (-(e.clientY - r.top) / r.height) * 2 + 1
     )
     ray.setFromCamera(pointer, camera)
-    const hit = ray.intersectObjects(targets)[0]
+    const visibleTargets = targets.filter((object) => {
+      for (let parent = object; parent; parent = parent.parent) {
+        if (!parent.visible) return false
+      }
+      return true
+    })
+    const hit = ray.intersectObjects(visibleTargets)[0]
     if (hit) select(hit.object.userData.machine)
   }
   renderer.domElement.addEventListener('pointerdown', onDown)
@@ -697,6 +721,7 @@ export function createWarehouse(
       overviewAuto = false
       focusIndex = i
       focusWhole = true
+      setInspection(i)
       rackMeshes.forEach((m) => (m.visible = false))
       const m = machines[i]
       controls.target.set(
@@ -705,15 +730,16 @@ export function createWarehouse(
         m.crane.position.z
       )
       camera.position.set(
-        m.crane.position.x + craneHeight * 1.1,
-        craneHeight * 0.85,
-        m.crane.position.z + craneHeight * 1.6
+        m.crane.position.x + craneHeight * 0.65,
+        craneHeight * 0.62,
+        m.crane.position.z + craneHeight * 1.65
       )
     },
     focus: (i) => {
       overviewAuto = false
       focusIndex = i
       focusWhole = false
+      setInspection(i)
       rackMeshes.forEach((m) => (m.visible = false))
       const m = machines[i]
       controls.target.set(
@@ -730,6 +756,7 @@ export function createWarehouse(
     reset: () => {
       overviewAuto = true
       focusIndex = null
+      setInspection(null)
       rackMeshes.forEach((m) => (m.visible = true))
       camera.position.set(halfLength + 38, craneHeight + 28, halfDepth + 48)
       controls.target.set(4, craneHeight / 2, 0)
@@ -739,6 +766,7 @@ export function createWarehouse(
     top: () => {
       overviewAuto = false
       focusIndex = null
+      setInspection(null)
       rackMeshes.forEach((m) => (m.visible = true))
       camera.position.set(4, Math.max(85, halfLength * 3), 0.01)
       controls.target.set(0, 0, 0)

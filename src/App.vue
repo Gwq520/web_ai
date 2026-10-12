@@ -522,7 +522,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
         <div class="scene-legend">
-          <span><i style="background: #f4c864"></i>双立柱堆垛机</span
+          <span><i style="background: #ff9d38"></i>双立柱堆垛机</span
           ><span><i style="background: #418aa2"></i>托盘货架</span
           ><span><i style="background: #b3976c"></i>库存托盘</span>
         </div>
