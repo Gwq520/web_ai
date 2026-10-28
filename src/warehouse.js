@@ -206,7 +206,7 @@ export function createWarehouse(
     const z = layout.aisles[i].z
     crane.position.set(-16 + i * 10, 0, z)
     scene.add(crane)
-    crane.scale.x = 0.88
+    crane.scale.x = 0.78
     box(
       scene,
       0,
@@ -217,8 +217,8 @@ export function createWarehouse(
       0.15,
       '#38a9d1'
     ).position.x = 0
-    box(crane, 0, 0.85, 0, 5.25, 0.45, 1.7, '#f28c28')
-    box(crane, 0, 0.46, 0, 5.1, 0.18, 1.9, '#263441')
+    box(crane, 0, 0.85, 0, 5.25, 0.45, 1.7, '#dc1824')
+    box(crane, 0, 0.46, 0, 5.1, 0.18, 1.9, '#172838')
     for (const dx of [-2.25, 2.25])
       for (const dz of [-0.7, 0.7]) {
         cylinder(crane, dx, 0.42, dz, 0.32, 0.23, '#263441')
@@ -235,41 +235,30 @@ export function createWarehouse(
     for (const dx of [-2, 2])
       for (const dz of [-0.85, 0.85])
         cylinder(crane, dx, 1.19, dz, 0.055, 0.04, '#aabac5', 'y')
-    for (let n = 0; n < 8; n++) {
-      const stripe = box(
-        crane,
-        -1.15 + n * 0.32,
-        0.84,
-        0.86,
-        0.14,
-        0.55,
-        0.025,
-        '#263441'
-      )
-      stripe.rotation.z = -0.45
-    }
+    const mastHeight = craneHeight - 0.5
+    const mastCenterY = (craneHeight + 0.5) / 2
     for (const x of [-2, 2]) {
-      box(crane, x, craneHeight / 2, 0, 0.25, craneHeight - 1, 0.40, '#ef7f1a')
+      box(crane, x, mastCenterY, 0, 0.25, mastHeight, 0.40, '#dc1824')
       for (const dz of [-0.26, 0.26])
         box(
           crane,
           x,
-          craneHeight / 2,
+          mastCenterY,
           dz,
           0.38,
-          craneHeight - 1,
+          mastHeight,
           0.055,
-          '#ffd266'
+          '#ef2430'
         )
       box(
         crane,
         x - Math.sign(x) * 0.25,
-        craneHeight / 2,
+        mastCenterY,
         0.02,
         0.08,
-        craneHeight - 1,
+        mastHeight,
         0.35,
-        '#aabac5'
+        '#8f9faa'
       )
       for (let y = 2; y < craneHeight - 1; y += 2.1)
         for (const dz of [-0.31, 0.31])
@@ -279,19 +268,49 @@ export function createWarehouse(
       box(crane,x,craneHeight/2,-.25,.06,craneHeight-1,.06,'#202d38')
       for(let y=1.4;y<craneHeight;y+=.45)box(crane,x, y,-.30,.07,.07,.05,'#667a88')
     }
-    box(crane, 0, craneHeight, 0, 5.15, 0.27, 0.65, '#ff9d38')
-    for (let y = 1.5; y < craneHeight; y += 0.65)
-      box(crane, -2.75, y, 0, 0.65, 0.08, 0.12, '#c3cdd3')
-    for (const x of [-3.05, -2.45])
-      box(crane, x, craneHeight / 2, 0, 0.07, craneHeight - 1, 0.1, '#c3cdd3')
-    const serviceY = Math.min(6, craneHeight * 0.45)
-    box(crane, -3.1, serviceY, 0, 1.6, 0.15, 1.5, '#667a88')
-    for (let dx = -3.8; dx < -2.3; dx += 0.18)
-      box(crane, dx, serviceY + 0.1, 0, 0.03, 0.02, 1.5, '#aabac5')
-    for (const dz of [-0.72, 0.72]) {
-      box(crane, -3.8, serviceY + 0.65, dz, 0.08, 1.3, 0.08, '#ff9d38')
-      box(crane, -3.1, serviceY + 1.25, dz, 1.5, 0.08, 0.08, '#ff9d38')
+    box(crane, 0, craneHeight, 0, 5.15, 0.38, 0.65, '#dc1824')
+    for (const columnX of [-2, 2]) {
+      box(crane, columnX, craneHeight - 0.05, 0, 0.8, 0.65, 0.72, '#ef2430')
+      for (const boltOffsetX of [-0.23, 0.23]) {
+        for (const boltOffsetY of [-0.18, 0.18]) {
+          cylinder(crane, columnX + boltOffsetX, craneHeight + boltOffsetY - 0.05, 0.38, 0.055, 0.04, '#263441')
+        }
+      }
     }
+    // 梯面位于门架外侧的 YZ 平面，梯面朝向与行走 X 轴一致。
+    const accessLadder = new THREE.Group()
+    accessLadder.position.set(2.42, 0, 0)
+    accessLadder.rotation.y = Math.PI / 2
+    crane.add(accessLadder)
+    for (const x of [-0.3, 0.3])
+      box(accessLadder, x, mastCenterY, 0, 0.07, mastHeight, 0.1, '#c3cdd3')
+    for (let y = 1.5; y < craneHeight; y += 0.65)
+      box(accessLadder, 0, y, 0, 0.65, 0.08, 0.12, '#c3cdd3')
+    const servicePlatformHeight = Math.max(2.4, Math.min(5.3, craneHeight * 0.3))
+    box(crane, 3.05, 0.85, 0, 1.7, 0.3, 1.7, '#dc1824')
+    box(crane, 3.05, servicePlatformHeight, 0, 1.7, 0.16, 1.5, '#dc1824')
+    for (let gratingX = 2.28; gratingX < 3.9; gratingX += 0.18)
+      box(crane, gratingX, servicePlatformHeight + 0.1, 0, 0.04, 0.03, 1.4, '#aabac5')
+    for (const railZ of [-0.72, 0.72]) {
+      for (const postX of [2.25, 3.05, 3.85])
+        box(crane, postX, servicePlatformHeight + 0.65, railZ, 0.08, 1.3, 0.08, '#dc1824')
+      for (const railHeight of [0.65, 1.25])
+        box(crane, 3.05, servicePlatformHeight + railHeight, railZ, 1.7, 0.08, 0.08, '#dc1824')
+      for (const supportX of [2.35, 3.75])
+        box(crane, supportX, (servicePlatformHeight + 0.95) / 2, railZ, 0.09, servicePlatformHeight - 0.95, 0.09, '#dc1824')
+    }
+    for (const railHeight of [0.65, 1.25])
+      box(crane, 3.85, servicePlatformHeight + railHeight, 0, 0.08, 0.08, 1.5, '#dc1824')
+    const serviceLadderHeight = servicePlatformHeight + 0.5
+    for (const ladderSideZ of [-0.325, 0.325])
+      box(crane, 3.98, 0.75 + serviceLadderHeight / 2, ladderSideZ, 0.09, serviceLadderHeight, 0.07, '#dc1824')
+    for (let rungY = 1.15; rungY < servicePlatformHeight + 0.1; rungY += 0.48)
+      box(crane, 3.98, rungY, 0, 0.12, 0.07, 0.65, '#dc1824')
+    const cabinetHeight = servicePlatformHeight - 1.25
+    const cabinetCenterY = 1.05 + cabinetHeight / 2
+    box(crane, 3.05, cabinetCenterY, 0, 1.1, cabinetHeight, 1.05, '#d9e0e3')
+    box(crane, 3.05, cabinetCenterY, 0.54, 0.98, cabinetHeight - 0.12, 0.04, '#eef1f2')
+    box(crane, 3.4, cabinetCenterY, 0.58, 0.05, 0.35, 0.05, '#536878')
     for (const x of [-2, 2]) {
       box(
         crane,
@@ -327,62 +346,60 @@ export function createWarehouse(
           0.045,
           0.78,
           0.045,
-          '#4b81c6'
+          '#426876'
         )
       box(crane, x, y - 0.72, z, size * 2, 0.4, size * 2, '#667a88')
       cylinder(crane, x - 0.15, y - 0.6, z + 0.48, 0.42, 0.25, '#aabac5')
       cylinder(crane, x - 0.15, y - 0.6, z + 0.62, 0.17, 0.025, '#263441')
     }
-    motor(2.7, 3.15, 0, 0.32)
-    motor(2.7, 1.7, -0.05, 0.25)
-    cylinder(crane, 2.2, 2.05, 0.12, 0.4, 0.75, '#667a88', 'x')
-    box(crane, -2.6, 2.15, -0.45, 0.55, 2.1, 0.5, '#cad6dc')
-    box(crane, -2.6, 2.65, -0.715, 0.3, 0.38, 0.025, '#202d38')
+    motor(-2.7, 3.15, 0, 0.32)
+    motor(-2.7, 1.7, -0.05, 0.25)
+    cylinder(crane, -2.2, 2.05, 0.12, 0.4, 0.75, '#667a88', 'x')
     const carriage = new THREE.Group()
     crane.add(carriage)
-    box(carriage, 0, 0, 0, 4.15, 0.24, 2.3, '#f28c28')
+    box(carriage, 0, 0, 0, 4.15, 0.24, 2.3, '#d9e0e3')
     for (const dx of [-1.7, 1.7]) {
-      box(carriage, dx, 0.6, 0, 0.25, 1.5, 0.8, '#667a88')
+      box(carriage, dx, 0.6, 0, 0.25, 1.5, 0.8, '#536878')
       for (const dy of [0.05, 1.15])
         cylinder(carriage, dx, dy, 0.5, 0.17, 0.12, '#263441')
     }
     for (const dz of [-1.1, 1.1]) {
-      box(carriage, 0, -0.05, dz, 3.4, 0.3, 0.12, '#ef7f1a')
-      for (let dx = -1.6; dx < 1.7; dx += 0.4)
-        box(
-          carriage,
-          dx,
-          -0.05,
-          dz + Math.sign(dz) * 0.07,
-          0.15,
-          0.23,
-          0.02,
-          '#263441'
-        )
+      box(carriage, 0, -0.05, dz, 3.4, 0.3, 0.12, '#dc1824')
     }
     for(const x of [-1.65,1.65]) {
       box(carriage,x,.8,-.42,.14,1.7,.12,'#c3cdd3')
       box(carriage,x,.8,.42,.14,1.7,.12,'#c3cdd3')
     }
-    box(carriage,0,.88,-.5,3.2,.12,.12,'#c3cdd3')
     const lowerFork = new THREE.Group()
     carriage.add(lowerFork)
     const upperFork = new THREE.Group()
     lowerFork.add(upperFork)
-    // Two parallel fork rails per layer, symmetric about the carrier centre.
-    for (const x of [-0.75, 0.75]) {
-      box(carriage, x, 0.26, 0, 0.38, 0.12, 2.8, '#394653')
-      box(lowerFork, x, 0.4, 0, 0.3, 0.14, 2.8, '#394653')
-      box(upperFork, x, 0.55, 0, 0.24, 0.14, 2.8, '#aabac5')
-      for (let z = -1.1; z < 1.2; z += 0.35)
-        cylinder(carriage, x, 0.29, z, 0.075, 0.42, '#99aab5', 'x')
+    // 承托面保持在载货台上方 0.64，分层导轨两端留通道供双向伸叉。
+    for (const forkCenterX of [-0.75, 0.75]) {
+      box(carriage, forkCenterX, 0.285, 0, 0.52, 0.13, 2.8, '#242b30')
+      box(lowerFork, forkCenterX, 0.415, 0, 0.34, 0.13, 2.8, '#30373c')
+      box(upperFork, forkCenterX, 0.52, 0, 0.3, 0.08, 2.8, '#242b30')
+      box(upperFork, forkCenterX, 0.6, 0, 0.44, 0.08, 2.8, '#242b30')
+      for (const guideOffsetX of [-0.18, 0.18])
+        box(lowerFork, forkCenterX + guideOffsetX, 0.42, 0, 0.025, 0.035, 2.72, '#81919a')
+      for (const mountingFootZ of [-1.16, 1.16]) {
+        box(carriage, forkCenterX, 0.17, mountingFootZ, 0.62, 0.1, 0.36, '#242b30')
+        for (const boltOffsetX of [-0.23, 0.23]) {
+          for (const boltOffsetZ of [-0.1, 0.1])
+            cylinder(carriage, forkCenterX + boltOffsetX, 0.235, mountingFootZ + boltOffsetZ, 0.025, 0.03, '#53616a', 'y')
+        }
+      }
+      const innerGuideX = forkCenterX - Math.sign(forkCenterX) * 0.23
+      for (const rollerZ of [-1.1, -0.35, 0.35, 1.1])
+        cylinder(carriage, innerGuideX, 0.37, rollerZ, 0.055, 0.09, '#99aab5', 'x')
     }
-    box(carriage, 0, 0.15, -1.05, 1.7, 0.16, 0.2, '#394653')
-    cylinder(carriage, 0, 0.19, -0.95, 0.13, 1.65, '#aabac5', 'x')
-    box(carriage, 1.1, 0.15, -0.85, 0.45, 0.33, 0.5, '#354653')
-    for (const dx of [-0.75, 0.75])
-      for (let dz = -1.25; dz < 1.3; dz += 0.2)
-        box(lowerFork, dx + 0.16, 0.42, dz, 0.025, 0.03, 0.07, '#aabac5')
+    box(carriage, 0, 0.17, 0, 0.5, 0.1, 0.45, '#242b30')
+    cylinder(carriage, 0, 0.3, 0, 0.045, 1.5, '#81919a', 'x')
+    cylinder(carriage, 0, 0.3, 0, 0.13, 0.48, '#3b4d53', 'x')
+    for (const couplingX of [-0.34, 0.34])
+      cylinder(carriage, couplingX, 0.3, 0, 0.085, 0.12, '#242b30', 'x')
+    for (const finZ of [-0.08, 0, 0.08])
+      box(carriage, 0, 0.41, finZ, 0.4, 0.02, 0.025, '#53616a')
     const plateCanvas = document.createElement('canvas')
     plateCanvas.width = 256
     plateCanvas.height = 128
@@ -507,17 +524,52 @@ export function createWarehouse(
         0,
         layout.aisles[i].z + side * (forkMode === 'double' ? 5 : 2.5)
       )
-      box(dock, 4, 2.25, 0, 10, 0.35, 2.8, '#345366')
-      for (let dx = -0.8; dx < 9; dx += 0.5)
-        cylinder(dock, dx, 2.51, 0, 0.13, 2.6, '#99aab5')
-      for (const edge of [-1.2, 1.2]) {
-        box(dock, 4, 3.8, edge, 10, 0.08, 0.08, '#f28c28')
-        for (const dx of [-1, 4, 9]) {
-          box(dock, dx, 2, edge, 0.1, 3.6, 0.1, '#f28c28')
-          box(dock, dx, 1, edge / 2, 0.15, 2, 0.15, '#345366')
+      // 链条承托面保持在 2.64，与现有托盘交接高度一致。
+      for (const chainTrackZ of [-0.85, 0.85]) {
+        box(dock, 4, 2.26, chainTrackZ, 9.64, 0.12, 0.42, '#c5cbd0')
+        box(dock, 4, 2.585, chainTrackZ, 9.64, 0.06, 0.2, '#303941')
+        for (const channelOffset of [-0.16, 0.16]) {
+          box(dock, 4, 2.405, chainTrackZ + channelOffset, 9.64, 0.35, 0.07, '#b8c2c9')
+          box(dock, 4, 2.58, chainTrackZ + channelOffset, 9.7, 0.025, 0.09, '#e1e5e8')
+        }
+        for (const sprocketX of [-0.82, 8.82]) {
+          cylinder(dock, sprocketX, 2.46, chainTrackZ, 0.18, 0.24, '#303941')
+          for (const hubOffset of [-0.22, 0.22])
+            cylinder(dock, sprocketX, 2.46, chainTrackZ + hubOffset, 0.075, 0.025, '#8c9aa5')
         }
       }
-      box(dock, 9, 2, 2.3, 1, 3, 1, '#c8d7df')
+      // 重复链节合批绘制，避免增加每条输送线的独立绘制次数。
+      const chainLinkCount = 48
+      const chainLinks = new THREE.InstancedMesh(
+        new THREE.BoxGeometry(0.11, 0.05, 0.2),
+        materials['#303941'],
+        chainLinkCount * 2
+      )
+      const chainLinkMatrix = new THREE.Matrix4()
+      let chainLinkIndex = 0
+      for (const chainTrackZ of [-0.85, 0.85]) {
+        for (let chainIndex = 0; chainIndex < chainLinkCount; chainIndex++) {
+          chainLinkMatrix.makeTranslation(-0.7 + chainIndex * 0.2, 2.615, chainTrackZ)
+          chainLinks.setMatrixAt(chainLinkIndex, chainLinkMatrix)
+          chainLinkIndex++
+        }
+      }
+      dock.add(chainLinks)
+      for (const supportX of [0, 4, 8])
+        box(dock, supportX, 2.05, 0, 0.18, 0.3, 2.06, '#d6dcdf')
+      for (const supportX of [0, 8]) {
+        for (const supportZ of [-0.85, 0.85]) {
+          box(dock, supportX, 1.25, supportZ, 0.18, 1.7, 0.2, '#d6dcdf')
+          cylinder(dock, supportX, 0.25, supportZ, 0.055, 0.32, '#8c9aa5', 'y')
+          cylinder(dock, supportX, 0.37, supportZ, 0.09, 0.07, '#aabac5', 'y')
+          box(dock, supportX, 0.08, supportZ, 0.42, 0.06, 0.38, '#aabac5')
+        }
+      }
+      for (const frameZ of [-0.85, 0.85])
+        box(dock, 4, 0.9, frameZ, 8, 0.13, 0.13, '#d6dcdf')
+      cylinder(dock, 1.1, 2.1, 0, 0.045, 1.85, '#8c9aa5')
+      cylinder(dock, 1.1, 1.91, -0.5, 0.18, 0.5, '#53616b')
+      box(dock, 1.1, 2.05, -0.77, 0.32, 0.32, 0.22, '#8c9aa5')
       docks.push({ dock, index: i, side })
     }
   function positionDocks() {
@@ -587,7 +639,7 @@ export function createWarehouse(
       const m = machines[focusIndex]
       const target = new THREE.Vector3(
         m.crane.position.x,
-        focusWhole ? craneHeight / 2 : m.carriage.position.y + 1,
+        craneHeight / 2,
         m.crane.position.z
       )
       const delta = target.clone().sub(controls.target)
@@ -625,6 +677,55 @@ export function createWarehouse(
     camera.position.copy(controls.target).addScaledVector(direction, distance)
     camera.lookAt(controls.target)
   }
+  function fitMachine() {
+    const machine = machines[focusIndex]
+    machine.crane.updateWorldMatrix(true, true)
+    const bounds = new THREE.Box3()
+    machine.crane.children.forEach((part) => {
+      if (part !== machine.carriage) bounds.expandByObject(part)
+    })
+    // 为整机、报警标签和左右伸叉预留空间，避免低位载货台把门架顶端带出画面。
+    let forkReach = 3.9
+    if (forkMode === 'double') forkReach = 6.4
+    bounds.min.y = 0
+    bounds.max.y = Math.max(bounds.max.y, craneHeight + 2.3)
+    const carriageBounds = new THREE.Box3().setFromObject(machine.carriage)
+    const route = transferPoints(config, focusIndex)
+    carriageBounds.min.y += Math.min(route.pickup.y, route.drop.y) - machine.carriage.position.y
+    carriageBounds.max.y += Math.max(route.pickup.y, route.drop.y) + 0.22 - machine.carriage.position.y
+    carriageBounds.min.z = machine.crane.position.z - forkReach
+    carriageBounds.max.z = machine.crane.position.z + forkReach
+    controls.target.set(machine.crane.position.x, craneHeight / 2, machine.crane.position.z)
+    const direction = new THREE.Vector3(0.6, 0.16, 1).normalize()
+    let frameLimit = 0.88
+    if (focusWhole) frameLimit = 0.78
+    let distance = bounds.getSize(new THREE.Vector3()).length() * 2
+    for (let iteration = 0; iteration < 6; iteration++) {
+      camera.position.copy(controls.target).addScaledVector(direction, distance)
+      camera.lookAt(controls.target)
+      camera.updateMatrixWorld(true)
+      let extent = 0
+      for (const partBounds of [bounds, carriageBounds])
+        for (const x of [partBounds.min.x, partBounds.max.x])
+          for (const y of [partBounds.min.y, partBounds.max.y])
+            for (const z of [partBounds.min.z, partBounds.max.z]) {
+              const point = new THREE.Vector3(x, y, z).project(camera)
+              extent = Math.max(extent, Math.abs(point.x), Math.abs(point.y))
+            }
+      distance *= extent / frameLimit
+    }
+    camera.position.copy(controls.target).addScaledVector(direction, distance)
+    camera.lookAt(controls.target)
+    needsRender = true
+  }
+  function focusMachine(index, whole) {
+    overviewAuto = false
+    focusIndex = index
+    focusWhole = whole
+    setInspection(index)
+    rackMeshes.forEach((mesh) => (mesh.visible = false))
+    fitMachine()
+  }
   controls.addEventListener('start', () => (overviewAuto = false))
   const resize = () => {
     const { width, height } = container.getBoundingClientRect()
@@ -632,6 +733,7 @@ export function createWarehouse(
     camera.aspect = width / height
     camera.updateProjectionMatrix()
     if (overviewAuto) fitOverview()
+    else if (focusIndex !== null) fitMachine()
     renderer.setPixelRatio(
       Math.min(devicePixelRatio, 2, Math.sqrt(3000000 / (width * height)))
     )
@@ -718,42 +820,8 @@ export function createWarehouse(
       })
       needsRender = true
     },
-    fullFocus: (i) => {
-      overviewAuto = false
-      focusIndex = i
-      focusWhole = true
-      setInspection(i)
-      rackMeshes.forEach((m) => (m.visible = false))
-      const m = machines[i]
-      controls.target.set(
-        m.crane.position.x,
-        craneHeight / 2,
-        m.crane.position.z
-      )
-      camera.position.set(
-        m.crane.position.x + craneHeight * 0.65,
-        craneHeight * 0.62,
-        m.crane.position.z + craneHeight * 1.65
-      )
-    },
-    focus: (i) => {
-      overviewAuto = false
-      focusIndex = i
-      focusWhole = false
-      setInspection(i)
-      rackMeshes.forEach((m) => (m.visible = false))
-      const m = machines[i]
-      controls.target.set(
-        m.crane.position.x,
-        m.carriage.position.y + 1,
-        m.crane.position.z
-      )
-      camera.position.set(
-        m.crane.position.x + 11,
-        m.carriage.position.y + 7,
-        m.crane.position.z + 16
-      )
-    },
+    fullFocus: (i) => focusMachine(i, true),
+    focus: (i) => focusMachine(i, false),
     reset: () => {
       overviewAuto = true
       focusIndex = null

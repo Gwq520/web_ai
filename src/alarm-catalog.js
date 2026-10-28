@@ -1,4 +1,4 @@
-const names=`手动
+const names = `手动
 急停
 行走伺服或变频器故障
 升降伺服或变频器故障
@@ -77,8 +77,39 @@ const names=`手动
 卷帘门变频故障
 左回叉时右超界
 右回叉时左超界`.split('\n')
-function classify(name){if(/急停|按钮|安全门|松绳|超载|限位|过热/.test(name))return '安全保护';if(/地址|目标超限|高货低送/.test(name))return '地址与任务';if(/通讯|通信/.test(name))return '通信';if(/货物|托盘/.test(name))return '货物检测';if(/叉|近端/.test(name))return '货叉机构';if(/行走|升降|变频|卷帘/.test(name))return '驱动与定位';return '运行模式'}
-function phaseFor(name){if(/取货后/.test(name))return 3;if(/放货后/.test(name))return 7;if(/放货时|送货时|放远端/.test(name))return 5;if(/取货时|取远端/.test(name))return 1;if(/回叉/.test(name))return 7;if(/行走|升降|运动时/.test(name))return 0;return null}
-export const DEFAULT_ALARM={code:'FORK-101',message:'取货货叉驱动异常',category:'货叉机构',severity:'故障',phase:1}
-export const ALARM_CATALOG=names.map((message,i)=>({code:'SIM-'+String(i+1).padStart(3,'0'),message,category:classify(message),severity:message==='手动'?'状态提示':/急停|应急|安全门|松绳|超载/.test(message)?'紧急':'故障',phase:phaseFor(message)}))
-export const ALARM_OPTIONS=[DEFAULT_ALARM,...ALARM_CATALOG]
+
+function classify(name) {
+    if (/急停|按钮|安全门|松绳|超载|限位|过热/.test(name)) return '安全保护';
+    if (/地址|目标超限|高货低送/.test(name)) return '地址与任务';
+    if (/通讯|通信/.test(name)) return '通信';
+    if (/货物|托盘/.test(name)) return '货物检测';
+    if (/叉|近端/.test(name)) return '货叉机构';
+    if (/行走|升降|变频|卷帘/.test(name)) return '驱动与定位';
+    return '运行模式'
+}
+
+function phaseFor(name) {
+    if (/取货后/.test(name)) return 3;
+    if (/放货后/.test(name)) return 7;
+    if (/放货时|送货时|放远端/.test(name)) return 5;
+    if (/取货时|取远端/.test(name)) return 1;
+    if (/回叉/.test(name)) return 7;
+    if (/行走|升降|运动时/.test(name)) return 0;
+    return null
+}
+
+export const DEFAULT_ALARM = {
+    code: 'FORK-101',
+    message: '取货货叉驱动异常',
+    category: '货叉机构',
+    severity: '故障',
+    phase: 1
+}
+export const ALARM_CATALOG = names.map((message, i) => ({
+    code: 'SIM-' + String(i + 1).padStart(3, '0'),
+    message,
+    category: classify(message),
+    severity: message === '手动' ? '状态提示' : /急停|应急|安全门|松绳|超载/.test(message) ? '紧急' : '故障',
+    phase: phaseFor(message)
+}))
+export const ALARM_OPTIONS = [DEFAULT_ALARM, ...ALARM_CATALOG]

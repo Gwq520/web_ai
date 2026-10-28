@@ -1,20 +1,163 @@
 <script setup>
-import {ref,computed} from 'vue'
-const props=defineProps({placements:Array,assets:Array,selected:String,snap:Boolean})
-const emit=defineEmits(['select','move','drop'])
-const svg=ref(),dragging=ref(null),zoom=ref(1)
-const extent=computed(()=>{let x=30,z=22.5;for(const p of props.placements){x=Math.max(x,Math.abs(p.position[0])+6);z=Math.max(z,Math.abs(p.position[2])+6)}return {x:x/zoom.value,z:z/zoom.value}})
-const viewBox=computed(()=>`${-extent.value.x} ${-extent.value.z} ${extent.value.x*2} ${extent.value.z*2}`)
-const colors={stacker:'#f5a648',rack:'#65b0df',conveyor:'#51dcc5',pallet:'#5b8cf5',robot:'#ffc56f',lift:'#b3a0f1',station:'#69d3d8',safety:'#ef9d9d',other:'#c895eb'}
-const asset=p=>props.assets.find(a=>a.id===p.assetId)
-const size=p=>{const b=p.bounds||({stacker:[3.5,8,2],rack:[4,6,2],conveyor:[6,1.1,1.6],pallet:[1.2,.4,1]}[asset(p)?.category]||[2,2,2]);return {x:Math.max(.3,b[0]*p.scale[0]),z:Math.max(.3,b[2]*p.scale[2])}}
-const point=e=>{const p=svg.value.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.value.getScreenCTM().inverse())}
-const rounded=v=>props.snap?Math.round(v*2)/2:Number(v.toFixed(2))
-function down(p,e){emit('select',p.id);const at=point(e);dragging.value={id:p.id,dx:at.x-p.position[0],dz:at.y-p.position[2]};e.currentTarget.setPointerCapture(e.pointerId)}
-function move(e){if(!dragging.value)return;const at=point(e);emit('move',{id:dragging.value.id,x:rounded(at.x-dragging.value.dx),z:rounded(at.y-dragging.value.dz)})}
-function dropped(e){const at=point(e),id=e.dataTransfer.getData('application/warehouse-asset');if(id)emit('drop',{assetId:id,x:rounded(at.x),z:rounded(at.y)})}
+import {ref, computed} from 'vue'
+
+const props = defineProps({placements: Array, assets: Array, selected: String, snap: Boolean})
+const emit = defineEmits(['select', 'move', 'drop'])
+const svg = ref(), dragging = ref(null), zoom = ref(1)
+const extent = computed(() => {
+  let x = 30, z = 22.5;
+  for (const p of props.placements) {
+    x = Math.max(x, Math.abs(p.position[0]) + 6);
+    z = Math.max(z, Math.abs(p.position[2]) + 6)
+  }
+  return {x: x / zoom.value, z: z / zoom.value}
+})
+const viewBox = computed(() => `${-extent.value.x} ${-extent.value.z} ${extent.value.x * 2} ${extent.value.z * 2}`)
+const colors = {
+  stacker: '#f5a648',
+  rack: '#65b0df',
+  shuttle: '#8cc6ff',
+  conveyor: '#51dcc5',
+  sorter: '#50d7bb',
+  pallet: '#5b8cf5',
+  robot: '#ffc56f',
+  lift: '#b3a0f1',
+  station: '#69d3d8',
+  dock: '#dfb174',
+  safety: '#ef9d9d',
+  sensor: '#d4a0ed',
+  other: '#c895eb'
+}
+const asset = p => props.assets.find(a => a.id === p.assetId)
+const svgSource = a => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(a.svg)}`
+const size = p => {
+  const b = p.bounds || ({
+    stacker: [3.5, 8, 2],
+    rack: [4, 6, 2],
+    conveyor: [6, 1.1, 1.6],
+    pallet: [1.2, .4, 1]
+  }[asset(p)?.category] || [2, 2, 2]);
+  return {x: Math.max(.3, b[0] * p.scale[0]), z: Math.max(.3, b[2] * p.scale[2])}
+}
+const point = e => {
+  const p = svg.value.createSVGPoint();
+  p.x = e.clientX;
+  p.y = e.clientY;
+  return p.matrixTransform(svg.value.getScreenCTM().inverse())
+}
+const rounded = v => props.snap ? Math.round(v * 2) / 2 : Number(v.toFixed(2))
+
+function down(p, e) {
+  emit('select', p.id);
+  const at = point(e);
+  dragging.value = {id: p.id, dx: at.x - p.position[0], dz: at.y - p.position[2]};
+  e.currentTarget.setPointerCapture(e.pointerId)
+}
+
+function move(e) {
+  if (!dragging.value) return;
+  const at = point(e);
+  emit('move', {id: dragging.value.id, x: rounded(at.x - dragging.value.dx), z: rounded(at.y - dragging.value.dz)})
+}
+
+function dropped(e) {
+  const at = point(e), id = e.dataTransfer.getData('application/warehouse-asset');
+  if (id) emit('drop', {assetId: id, x: rounded(at.x), z: rounded(at.y)})
+}
 </script>
-<template><div class="plan-container"><div class="plan-caption"><b>二维布局 · 俯视平面</b><span>坐标单位 m · 拖动设备移动 · 在右侧修改旋转 Y</span><el-button size="small" @click="zoom=Math.max(.5,zoom-.25)">缩小</el-button><el-button size="small" @click="zoom=Math.min(3,zoom+.25)">放大</el-button><el-button size="small" @click="zoom=1">适配</el-button></div><svg ref="svg" class="plan-svg" :viewBox="viewBox" role="img" aria-label="二维设备布局画布" @dragover.prevent @drop.prevent="dropped" @pointermove="move" @pointerup="dragging=null" @pointercancel="dragging=null"><defs><pattern id="plan-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#264457" stroke-width=".025"/></pattern></defs><rect :x="-extent.x" :y="-extent.z" :width="extent.x*2" :height="extent.z*2" fill="url(#plan-grid)"/><path :d="`M ${-extent.x} 0 H ${extent.x} M 0 ${-extent.z} V ${extent.z}`" stroke="#4c7989" stroke-width=".06"/><text :x="extent.x-2" y="-.3" fill="#86adbb" font-size=".6">X</text><text x=".3" :y="extent.z-1" fill="#86adbb" font-size=".6">Z</text><g v-for="p in placements" :key="p.id" :data-device-id="p.id" :transform="`translate(${p.position[0]} ${p.position[2]}) rotate(${-p.rotation[1]*180/Math.PI})`" class="plan-device" @pointerdown.stop="down(p,$event)"><rect :x="-size(p).x/2" :y="-size(p).z/2" :width="size(p).x" :height="size(p).z" rx=".12" :fill="colors[asset(p)?.category]||colors.other" fill-opacity=".24" :stroke="selected===p.id?'#fff':colors[asset(p)?.category]||colors.other" :stroke-width="selected===p.id?.15:.07"/><path :d="`M 0 ${-size(p).z/2} l -.25 .4 h .5 z`" :fill="colors[asset(p)?.category]||colors.other"/><text text-anchor="middle" y=".18" font-size=".48" fill="#eefbff" pointer-events="none">{{p.name.length>14?p.name.slice(0,14)+'…':p.name}}</text></g></svg><div v-if="!placements.length" class="plan-empty">从左侧拖入货架、堆垛机或输送线<br>布置完成后点击「生成三维」</div></div></template>
+<template>
+  <div class="plan-container">
+    <div class="plan-caption"><b>二维布局 · 俯视平面</b><span>坐标单位 m · 拖动设备移动 · 在右侧修改旋转 Y</span>
+      <el-button size="small" @click="zoom=Math.max(.5,zoom-.25)">缩小</el-button>
+      <el-button size="small" @click="zoom=Math.min(3,zoom+.25)">放大</el-button>
+      <el-button size="small" @click="zoom=1">适配</el-button>
+    </div>
+    <svg ref="svg" class="plan-svg" :viewBox="viewBox" role="img" aria-label="二维设备布局画布" @dragover.prevent
+         @drop.prevent="dropped" @pointermove="move" @pointerup="dragging=null" @pointercancel="dragging=null">
+      <defs>
+        <pattern id="plan-grid" width="1" height="1" patternUnits="userSpaceOnUse">
+          <path d="M 1 0 L 0 0 0 1" fill="none" stroke="#264457" stroke-width=".025"/>
+        </pattern>
+      </defs>
+      <rect :x="-extent.x" :y="-extent.z" :width="extent.x*2" :height="extent.z*2" fill="url(#plan-grid)"/>
+      <path :d="`M ${-extent.x} 0 H ${extent.x} M 0 ${-extent.z} V ${extent.z}`" stroke="#4c7989" stroke-width=".06"/>
+      <text :x="extent.x-2" y="-.3" fill="#86adbb" font-size=".6">X</text>
+      <text x=".3" :y="extent.z-1" fill="#86adbb" font-size=".6">Z</text>
+      <g v-for="p in placements" :key="p.id" :data-device-id="p.id"
+         :transform="`translate(${p.position[0]} ${p.position[2]}) rotate(${-p.rotation[1]*180/Math.PI})`"
+         class="plan-device" @pointerdown.stop="down(p,$event)">
+        <rect :x="-size(p).x/2" :y="-size(p).z/2" :width="size(p).x" :height="size(p).z" rx=".12"
+              :fill="colors[asset(p)?.category]||colors.other" fill-opacity=".24"
+              :stroke="selected===p.id?'#fff':colors[asset(p)?.category]||colors.other"
+              :stroke-width="selected===p.id?.15:.07"/>
+        <image v-if="asset(p)?.svg" :href="svgSource(asset(p))" :x="-size(p).x/2" :y="-size(p).z/2"
+               :width="size(p).x" :height="size(p).z" preserveAspectRatio="xMidYMid meet" pointer-events="none"/>
+        <path :d="`M 0 ${-size(p).z/2} l -.25 .4 h .5 z`" :fill="colors[asset(p)?.category]||colors.other"/>
+        <text text-anchor="middle" y=".18" font-size=".48" fill="#eefbff" pointer-events="none">
+          {{ p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name }}
+        </text>
+      </g>
+    </svg>
+    <div v-if="!placements.length" class="plan-empty">从左侧拖入货架、堆垛机或输送线<br>布置完成后点击「生成三维」</div>
+  </div>
+</template>
 <style>
-.plan-container{height:100%;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);position:relative;background:#0b1a28}.plan-caption{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border-bottom:1px solid #315267;font-size:12px}.plan-caption span{color:#8badbd;margin-right:auto;font-size:11px}.plan-caption .el-button{margin:0}.plan-svg{width:100%;height:100%;min-height:0;touch-action:none;display:block}.plan-device{cursor:move}.plan-empty{position:absolute;top:50%;left:15%;right:15%;text-align:center;color:#86adbb;font-size:14px;line-height:2;pointer-events:none}@media(max-width:650px){.plan-caption span{width:100%}}
+.plan-container {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows:auto minmax(0, 1fr);
+  position: relative;
+  background: #0b1a28
+}
+
+.plan-caption {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 12px;
+  border-bottom: 1px solid #315267;
+  font-size: 12px
+}
+
+.plan-caption span {
+  color: #8badbd;
+  margin-right: auto;
+  font-size: 11px
+}
+
+.plan-caption .el-button {
+  margin: 0
+}
+
+.plan-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  touch-action: none;
+  display: block
+}
+
+.plan-device {
+  cursor: move
+}
+
+.plan-empty {
+  position: absolute;
+  top: 50%;
+  left: 15%;
+  right: 15%;
+  text-align: center;
+  color: #86adbb;
+  font-size: 14px;
+  line-height: 2;
+  pointer-events: none
+}
+
+@media (max-width: 650px) {
+  .plan-caption span {
+    width: 100%
+  }
+}
 </style>
